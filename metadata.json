@@ -1,0 +1,8 @@
+{
+  "name": "Cómo Cambia la Gente: El Juego",
+  "description": "Un juego interactivo de capacitación para consejería bíblica con múltiples categorías y desafíos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
