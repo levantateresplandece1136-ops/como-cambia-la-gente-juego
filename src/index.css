@@ -1,22 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
+  --font-serif: "Playfair Display", serif;
   
-  --color-brand-purple: #7F77DD;
-  --color-brand-teal: #1D9E75;
-  --color-brand-coral: #D85A30;
-  --color-brand-amber: #BA7517;
-  --color-brand-blue: #378ADD;
-  --color-brand-green: #3B6D11;
+  --color-brand-purple: #5D54A4;
+  --color-brand-teal: #167D5C;
+  --color-brand-coral: #C14A26;
+  --color-brand-amber: #A66614;
+  --color-brand-blue: #2B6CAB;
+  --color-brand-green: #2E5C0A;
+  --color-brand-paper: #FDFCF8;
+  --color-brand-ink: #1F1E1B;
 }
 
 @layer base {
   body {
-    @apply bg-[#F5F4F0] text-[#1A1A18] selection:bg-brand-purple/20;
+    @apply bg-brand-paper text-brand-ink selection:bg-brand-purple/20;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight text-brand-ink;
   }
 }
 
@@ -26,4 +33,9 @@
 
 .backface-hidden {
   backface-visibility: hidden;
+}
+
+/* Texture overlay for paper feel */
+.paper-texture {
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
 }

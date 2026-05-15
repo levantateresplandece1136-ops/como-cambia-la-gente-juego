@@ -1,6 +1,6 @@
 {
-  "name": "Cómo Cambia la Gente: El Juego",
-  "description": "Un juego interactivo de capacitación para consejería bíblica con múltiples categorías y desafíos.",
+  "name": "¿Cómo cambia la gente? — El Juego",
+  "description": "Entrenamiento práctico en consejería bíblica y transformación del corazón. Diagnóstico, evangelio y aplicación dinámica.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

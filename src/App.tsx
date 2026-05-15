@@ -1,9 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   HelpCircle, 
@@ -19,19 +14,48 @@ import {
   Eye, 
   ChevronRight,
   Trophy,
-  History
+  History,
+  Stethoscope,
+  Scale,
+  Ghost,
+  UserCheck,
+  Flame,
+  MessageCircleQuestion,
+  Info,
+  Users,
+  ShieldCheck,
+  Heart,
+  Skull,
+  Cross
 } from 'lucide-react';
 import { CATEGORIES, GAME_DATA, Category, CategoryId } from './gameData';
 
-type Screen = 'home' | 'game' | 'results';
+type Screen = 'home' | 'game' | 'results' | 'special_card';
+type PlayMode = 'competitive' | 'cooperative';
 
 interface Result {
   idx: number;
   status: 'correct' | 'wrong' | 'skip';
 }
 
+interface SpecialCard {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  color: string;
+}
+
+const SPECIAL_CARDS: SpecialCard[] = [
+  { id: 'gracia', name: 'Gracia', description: 'Duplica los puntos de esta ronda o permite repetir un fallo.', icon: Heart, color: 'brand-teal' },
+  { id: 'conviccion', name: 'Convicción', description: 'El Espíritu Santo confronta. Debes confesar un ídolo personal para avanzar.', icon: Info, color: 'brand-purple' },
+  { id: 'tentacion', name: 'Tentación', description: 'Atención: Resta 5 segundos al cronómetro en la próxima ronda.', icon: Skull, color: 'brand-coral' },
+  { id: 'comunidad', name: 'Comunidad', description: 'Pide ayuda a un compañero. Si ambos aciertan, ganan bono.', icon: Users, color: 'brand-blue' },
+];
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
+  const [mode, setMode] = useState<PlayMode>('competitive');
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -39,11 +63,13 @@ export default function App() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [currentSpecialCard, setCurrentSpecialCard] = useState<SpecialCard | null>(null);
+  const [coopScore, setCoopScore] = useState(50); // 0 (Carne) to 100 (Espíritu)
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper icons mapping
   const iconMap: Record<string, any> = {
-    HelpCircle, Zap, Key, UserCircle, BookOpen, Theater
+    HelpCircle, Zap, Key, UserCircle, BookOpen, Theater, 
+    Stethoscope, Scale, Ghost, UserCheck, Flame, MessageCircleQuestion
   };
 
   const startCategory = (cat: Category) => {
@@ -55,7 +81,7 @@ export default function App() {
     setShowAnswer(false);
     setIsTimerRunning(false);
     setScreen('game');
-    prepareTimer(cat.id === '5sec' ? 10 : 30);
+    prepareTimer(cat.id === '10sec' ? 10 : 30);
   };
 
   const prepareTimer = (seconds: number) => {
@@ -66,7 +92,6 @@ export default function App() {
 
   const startTimer = () => {
     setIsTimerRunning(true);
-    const totalSeconds = timeLeft;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -82,7 +107,21 @@ export default function App() {
 
   const markResult = (status: 'correct' | 'wrong' | 'skip') => {
     setResults([...results, { idx: currentIndex, status }]);
-    handleNext();
+    
+    // Update Co-op Score
+    if (mode === 'cooperative') {
+      if (status === 'correct') setCoopScore(prev => Math.min(100, prev + 10));
+      if (status === 'wrong') setCoopScore(prev => Math.max(0, prev - 10));
+    }
+
+    // Trigger special card chance (15%)
+    if (Math.random() < 0.15 && screen !== 'results') {
+      const randomCard = SPECIAL_CARDS[Math.floor(Math.random() * SPECIAL_CARDS.length)];
+      setCurrentSpecialCard(randomCard);
+      setScreen('special_card');
+    } else {
+      handleNext();
+    }
   };
 
   const handleNext = () => {
@@ -90,7 +129,8 @@ export default function App() {
       setCurrentIndex(currentIndex + 1);
       setShowAnswer(false);
       setIsTimerRunning(false);
-      prepareTimer(selectedCat?.id === '5sec' ? 10 : 30);
+      prepareTimer(selectedCat?.id === '10sec' ? 10 : 30);
+      setScreen('game');
     } else {
       setScreen('results');
       if (timerRef.current) clearInterval(timerRef.current);
@@ -102,16 +142,13 @@ export default function App() {
   const wrongCount = results.filter(r => r.status === 'wrong').length;
   const skipCount = results.filter(r => r.status === 'skip').length;
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   return (
-    <div className="min-h-screen font-sans flex flex-col items-center">
-      <main className="w-full max-w-xl mx-auto px-4 py-8 flex-1 flex flex-col">
+    <div className="min-h-screen bg-brand-paper paper-texture font-sans flex flex-col items-center">
+      <main className="w-full max-w-2xl mx-auto px-4 py-8 flex-1 flex flex-col">
         
         <AnimatePresence mode="wait">
           {screen === 'home' && (
@@ -122,13 +159,28 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="flex-1"
             >
-              <div className="mb-8 text-center sm:text-left">
-                <h1 className="font-display text-3xl font-bold tracking-tight text-[#1A1A18] mb-2">
+              <div className="mb-10 text-center">
+                <h1 className="font-serif italic text-5xl font-bold text-brand-ink mb-3">
                   ¿Cómo cambia la gente?
                 </h1>
-                <p className="text-[#5F5E5A]">
-                  El juego de capacitación interactiva para consejeros bíblicos.
+                <p className="text-brand-ink/60 font-medium tracking-wide uppercase text-xs">
+                  Entrenamiento práctico en Consejería Bíblica
                 </p>
+                
+                <div className="mt-8 flex justify-center gap-4">
+                  <button 
+                    onClick={() => setMode('competitive')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all cursor-pointer ${mode === 'competitive' ? 'bg-brand-ink text-white' : 'bg-transparent text-brand-ink/60 border-brand-ink/10'}`}
+                  >
+                    <Trophy size={16} /> Competitivo
+                  </button>
+                  <button 
+                    onClick={() => setMode('cooperative')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all cursor-pointer ${mode === 'cooperative' ? 'bg-brand-teal text-white border-brand-teal' : 'bg-transparent text-brand-ink/60 border-brand-ink/10'}`}
+                  >
+                    <Users size={16} /> Cooperativo
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -141,14 +193,17 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       onClick={() => startCategory(cat)}
-                      className={`group p-5 rounded-2xl border-2 border-transparent bg-white shadow-sm hover:shadow-md hover:border-${cat.color} transition-all text-left flex items-start gap-4 cursor-pointer active:scale-[0.98]`}
+                      className={`group p-5 rounded-3xl border-2 border-transparent bg-white shadow-sm hover:shadow-xl hover:border-${cat.color} transition-all text-left flex items-start gap-4 cursor-pointer active:scale-[0.98] border-b-4 border-b-black/5`}
                     >
-                      <div className={`p-3 rounded-xl bg-${cat.color}/10 text-${cat.color} group-hover:bg-${cat.color} group-hover:text-white transition-colors`}>
+                      <div className={`p-3 rounded-2xl bg-${cat.color}/10 text-${cat.color} group-hover:bg-${cat.color} group-hover:text-white transition-all shadow-inner`}>
                         <Icon size={24} />
                       </div>
-                      <div>
-                        <h3 className="font-display font-semibold text-[#1A1A18] group-hover:text-[#1A1A18]">{cat.name}</h3>
-                        <p className="text-xs text-[#5F5E5A] mt-1 line-clamp-1">{cat.description}</p>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-1">
+                          <h3 className="font-display font-bold text-brand-ink group-hover:text-brand-ink text-sm uppercase tracking-tight">{cat.name}</h3>
+                          <span className="text-[9px] font-black uppercase opacity-40">{cat.level}</span>
+                        </div>
+                        <p className="text-xs text-brand-ink/50 font-medium leading-snug">{cat.description}</p>
                       </div>
                     </motion.button>
                   );
@@ -160,32 +215,48 @@ export default function App() {
           {screen === 'game' && currentQuestion && (
             <motion.div 
               key="game"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col h-full"
             >
               {/* Header Stats */}
               <div className="flex justify-between items-center mb-6">
                 <button 
                   onClick={() => setScreen('home')}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors transition-all active:scale-90"
+                  className="p-3 hover:bg-black/5 rounded-full transition-all active:scale-90"
                 >
-                  <ArrowLeft size={20} />
+                  <ArrowLeft size={24} />
                 </button>
-                <div className="flex gap-2 text-[10px] font-bold tracking-wider uppercase">
-                  <span className="px-2 py-1 bg-brand-teal whitespace-nowrap text-white rounded-full">{correctCount} Correctas</span>
-                  <span className="px-2 py-1 bg-brand-coral whitespace-nowrap text-white rounded-full">{wrongCount} Incorrectas</span>
-                </div>
+                
+                {mode === 'cooperative' ? (
+                  <div className="flex-1 mx-8 text-center">
+                    <div className="flex justify-between text-[8px] font-bold uppercase mb-1">
+                      <span className="text-brand-coral flex items-center gap-1"><Skull size={8}/> Carne</span>
+                      <span className="text-brand-teal flex items-center gap-1">Espíritu <Heart size={8}/></span>
+                    </div>
+                    <div className="h-2 bg-black/5 rounded-full overflow-hidden flex">
+                      <motion.div 
+                        animate={{ width: `${coopScore}%` }}
+                        className="h-full bg-brand-teal"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 text-[10px] font-bold tracking-wider uppercase">
+                    <span className="px-3 py-1.5 bg-brand-teal text-white rounded-full shadow-lg shadow-brand-teal/20">{correctCount} Correctas</span>
+                    <span className="px-3 py-1.5 bg-brand-coral text-white rounded-full shadow-lg shadow-brand-coral/20">{wrongCount} Fallos</span>
+                  </div>
+                )}
               </div>
 
-              {/* Progress Bar */}
-              <div className="flex gap-1 mb-6">
+              {/* Progress */}
+              <div className="flex gap-1 mb-8">
                 {questions.map((_, i) => (
                   <div 
                     key={i}
                     className={`h-1.5 flex-1 rounded-full transition-all ${
-                      i === currentIndex ? 'bg-brand-purple scale-y-125' : 
+                      i === currentIndex ? 'bg-brand-purple scale-y-150 shadow-md ring-4 ring-brand-purple/10' : 
                       results[i]?.status === 'correct' ? 'bg-brand-teal' :
                       results[i]?.status === 'wrong' ? 'bg-brand-coral' :
                       results[i]?.status === 'skip' ? 'bg-brand-amber' :
@@ -195,156 +266,266 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Question Card */}
-              <div className="bg-white rounded-3xl p-8 shadow-xl flex-1 flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="absolute top-4 left-6 flex items-center gap-2">
-                  <span className="text-[10px] h-fit font-bold px-2 py-1 bg-black/5 rounded uppercase text-[#5F5E5A]">
-                    {selectedCat?.name}
-                  </span>
-                  {currentQuestion.diff && (
-                    <span className="text-[10px] h-fit font-bold px-2 py-1 bg-black/5 rounded uppercase text-[#5F5E5A]">
-                      {currentQuestion.diff}
+              {/* Enhanced Question Card */}
+              <motion.div 
+                layout
+                animate={
+                  isTimerRunning && timeLeft <= 5 && timeLeft > 0
+                    ? { 
+                        borderColor: ['#C14A26', '#1F1E1B', '#C14A26'],
+                        backgroundColor: ['#ffffff', '#C14A26', '#ffffff'],
+                        x: [0, -4, 4, -4, 4, 0],
+                        scale: [1, 1.02, 1]
+                      }
+                    : { borderColor: 'rgba(0,0,0,0.05)', backgroundColor: '#ffffff', x: 0 }
+                }
+                transition={isTimerRunning && timeLeft <= 5 ? { duration: 0.2, repeat: Infinity } : {}}
+                className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 flex-1 flex flex-col items-center justify-center relative overflow-hidden"
+              >
+                {isTimerRunning && timeLeft <= 5 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.4, 0] }}
+                    transition={{ duration: 0.1, repeat: Infinity }}
+                    className="absolute inset-0 bg-brand-coral pointer-events-none z-0"
+                  />
+                )}
+                <div className="absolute top-6 left-10 flex items-center gap-3 z-10">
+                  <div className={`p-2 rounded-xl bg-${selectedCat?.color}/10 text-${selectedCat?.color}`}>
+                    {selectedCat && iconMap[selectedCat.icon] && <selectedCat.icon size={16} />}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40 block">{selectedCat?.name}</span>
+                    <span className="text-xs font-bold text-brand-ink/60">{currentIndex + 1} de {questions.length}</span>
+                  </div>
+                </div>
+
+                {/* Timer */}
+                <div className="absolute top-6 right-10 z-10">
+                  <motion.div
+                    animate={isTimerRunning && timeLeft <= 5 ? { scale: [1, 1.3, 1] } : {}}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    className="relative"
+                  >
+                    <svg className="w-20 h-20 transform -rotate-90">
+                      <circle cx="40" cy="40" r="34" className="fill-none stroke-black/5 stroke-[4]" />
+                      <motion.circle 
+                        cx="40" cy="40" r="34" 
+                        className={`fill-none stroke-[4] ${timeLeft < 5 ? 'stroke-brand-paper' : 'stroke-brand-teal'}`}
+                        strokeDasharray="213"
+                        animate={{ strokeDashoffset: 213 * (1 - timeLeft / (selectedCat?.id === '10sec' ? 10 : 30)) }}
+                      />
+                    </svg>
+                    <span className={`absolute inset-0 flex items-center justify-center text-2xl font-black ${timeLeft < 5 ? 'text-white' : 'text-brand-ink'}`}>
+                      {timeLeft}
                     </span>
-                  )}
+                  </motion.div>
                 </div>
 
-                {/* Timer Circle */}
-                <div className="absolute top-6 right-6">
-                  <svg className="w-12 h-12 transform -rotate-90">
-                    <circle 
-                      cx="24" cy="24" r="20" 
-                      className="fill-none stroke-black/5 stroke-[4]"
-                    />
-                    <motion.circle 
-                      cx="24" cy="24" r="20" 
-                      className={`fill-none stroke-[4] ${timeLeft < 5 ? 'stroke-brand-coral' : 'stroke-brand-teal'}`}
-                      strokeDasharray="126"
-                      animate={{ strokeDashoffset: 126 * (1 - timeLeft / (selectedCat?.id === '5sec' ? 10 : 30)) }}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#1A1A18]">
-                    {timeLeft}
-                  </span>
-                </div>
-
-                <div className="text-center py-8">
-                  <motion.h2 
-                    key={currentIndex + 'q'}
+                <div className="text-center w-full mt-8 z-10">
+                  <motion.div 
+                    key={currentIndex}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="font-display text-2xl font-semibold leading-tight text-[#1A1A18]"
+                    transition={{ duration: 0.8 }}
+                    className="space-y-6"
                   >
-                    {selectedCat?.id === 'qa' && currentQuestion.q}
-                    {selectedCat?.id === '5sec' && (
-                      <>
-                        <span className="text-brand-amber block mb-2 text-sm uppercase font-bold tracking-widest">En 10 Segundos...</span>
-                        {currentQuestion.q}
-                      </>
-                    )}
-                    {selectedCat?.id === 'pass' && (
-                      <>
-                        <span className="text-[#5F5E5A] block mb-2 text-sm uppercase font-bold tracking-widest italic">Adivina la Palabra</span>
-                        {currentQuestion.def}
-                      </>
-                    )}
-                    {selectedCat?.id === 'who' && (
-                      <div className="space-y-4">
-                        <div className="p-3 bg-[#F5F4F0] rounded-xl text-sm border border-black/5">
-                          <span className="block text-[10px] font-bold text-[#5F5E5A] uppercase mb-1">Pista Fácil</span>
-                          {currentQuestion.easy}
-                        </div>
-                        <div className="p-3 bg-[#F5F4F0] rounded-xl text-sm border border-black/5 blur-sm hover:blur-none transition-all cursor-help">
-                          <span className="block text-[10px] font-bold text-[#5F5E5A] uppercase mb-1">Pista Difícil (Hover para ver)</span>
-                          {currentQuestion.hard}
+                    {/* Specialized UI based on category */}
+                    {selectedCat?.id === 'diagnosis' ? (
+                      <div className="space-y-6">
+                        <span className="text-brand-purple block text-xs font-black uppercase tracking-[0.3em]">Caso de Diagnóstico</span>
+                        <h2 className="font-serif italic text-3xl font-bold leading-tight">"{currentQuestion.scenario}"</h2>
+                        <div className="grid grid-cols-2 gap-3 mt-8">
+                          <div className="p-4 bg-brand-paper rounded-2xl border border-black/5 text-left opacity-30">
+                            <span className="block text-[8px] font-black uppercase mb-1">Calor</span>
+                            <span className="text-xs">Identifica el calor...</span>
+                          </div>
+                          <div className="p-4 bg-brand-paper rounded-2xl border border-black/5 text-left opacity-30">
+                            <span className="block text-[8px] font-black uppercase mb-1">Espinas</span>
+                            <span className="text-xs">Identifica las espinas...</span>
+                          </div>
                         </div>
                       </div>
+                    ) : selectedCat?.id === 'idol' ? (
+                      <div className="space-y-6">
+                        <span className="text-brand-coral block text-xs font-black uppercase tracking-[0.3em]">Identifica el Ídolo</span>
+                        <h2 className="font-serif italic text-3xl font-bold leading-tight">"{currentQuestion.scenario}"</h2>
+                        <div className="p-4 bg-brand-paper rounded-2xl border border-black/5 text-left opacity-30 mt-6">
+                          <span className="block text-[8px] font-black uppercase mb-1">Tesoro oculto</span>
+                          <span className="text-xs">¿Qué está gobernando el corazón?</span>
+                        </div>
+                      </div>
+                    ) : selectedCat?.id === 'evangelio' ? (
+                      <div className="space-y-8">
+                        <span className="text-brand-teal block text-xs font-black uppercase tracking-[0.3em]">Discernimiento Bíblico</span>
+                        <div className="text-4xl font-serif font-black leading-tight bg-brand-paper p-8 rounded-3xl border border-black/5">
+                          {currentQuestion.text}
+                        </div>
+                        <p className="text-brand-ink/40 text-sm font-medium">¿Refleja el evangelio o es puro moralismo?</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <h2 className="font-serif italic text-3xl font-bold leading-tight">
+                          {selectedCat?.id === 'qa' && currentQuestion.q}
+                          {selectedCat?.id === '10sec' && currentQuestion.q}
+                          {selectedCat?.id === 'pass' && currentQuestion.def}
+                          {selectedCat?.id === 'who' && currentQuestion.easy}
+                          {selectedCat?.id === 'counselor' && currentQuestion.case}
+                          {selectedCat?.id === 'deep_question' && currentQuestion.q}
+                          {selectedCat?.id === 'mime' && currentQuestion.concept}
+                        </h2>
+                      </div>
                     )}
-                    {selectedCat?.id === 'verse' && (
-                      <>
-                        <span className="block text-sm text-brand-blue uppercase mb-2 font-bold tracking-widest italic">¿Qué versículo dice...?</span>
-                        {currentQuestion.topic}
-                      </>
-                    )}
-                    {selectedCat?.id === 'mime' && (
-                      <>
-                        <span className="block text-sm text-brand-green uppercase mb-2 font-bold tracking-widest italic tracking-widest">Representa con mímica:</span>
-                        <div className="text-3xl font-bold bg-brand-green/5 p-4 rounded-2xl">{currentQuestion.concept}</div>
-                        <p className="text-sm mt-4 text-[#5F5E5A] font-normal leading-relaxed">{currentQuestion.desc}</p>
-                      </>
-                    )}
-                  </motion.h2>
+                  </motion.div>
                 </div>
 
                 <AnimatePresence>
                   {!isTimerRunning && !showAnswer && (
                     <motion.button
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
                       onClick={startTimer}
-                      className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-8 group transition-all"
+                      className="absolute inset-0 z-10 bg-brand-paper/90 backdrop-blur-md flex flex-col items-center justify-center p-8 group cursor-pointer"
                     >
-                      <div className="bg-brand-purple text-white p-4 rounded-full shadow-xl group-hover:scale-110 transition-transform mb-4">
-                        <Zap size={32} fill="currentColor" />
-                      </div>
-                      <span className="text-xl font-display font-bold text-brand-purple">¡Iniciar Tiempo!</span>
-                      <p className="text-xs text-[#5F5E5A] mt-2 font-medium">Tienes {timeLeft} segundos para responder</p>
+                      <motion.div 
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="bg-brand-purple text-white p-8 rounded-full shadow-2xl shadow-brand-purple/30 mb-6 relative"
+                      >
+                        <Cross size={48} />
+                        <motion.div 
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="absolute inset-0 bg-white rounded-full -z-10"
+                        />
+                      </motion.div>
+                      <span className="text-3xl font-display font-black text-brand-purple tracking-tighter uppercase">Capacitación</span>
+                      <p className="mt-4 text-[#5F5E5A] font-bold text-xs uppercase tracking-widest">Inicia el cronómetro</p>
                     </motion.button>
                   )}
 
                   {showAnswer && (
                     <motion.div 
                       key={currentIndex + 'a'}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="w-full mt-6 p-5 rounded-2xl bg-brand-teal/5 border border-brand-teal/20 text-brand-teal"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="w-full mt-10 p-8 rounded-[2rem] bg-brand-teal/5 border-2 border-brand-teal/10 shadow-inner overflow-y-auto max-h-[40vh]"
                     >
-                      <span className="block text-[10px] font-bold uppercase mb-1 opacity-60">Respuesta Correcta:</span>
-                      <p className="font-semibold text-lg leading-snug">
+                      <div className="flex items-center gap-2 mb-4 opacity-40">
+                        <ShieldCheck size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Respuesta Redentora</span>
+                      </div>
+                      <div className="text-brand-teal font-display font-black text-xl leading-snug">
+                        {selectedCat?.id === 'diagnosis' && (
+                          <div className="grid grid-cols-1 gap-4 text-left">
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Calor:</span>
+                              <span className="text-sm">{currentQuestion.calor}</span>
+                            </div>
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Ídolo:</span>
+                              <span className="text-sm">{currentQuestion.idolo}</span>
+                            </div>
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Cruz:</span>
+                              <span className="font-serif underline decoration-brand-teal/30 text-sm">{currentQuestion.evangelio}</span>
+                            </div>
+                          </div>
+                        )}
+                        {selectedCat?.id === 'evangelio' && currentQuestion.type}
+                        {selectedCat?.id === 'idol' && (
+                          <div className="grid grid-cols-1 gap-4 text-left">
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Ídolo:</span>
+                              <span className="text-sm font-black uppercase">{currentQuestion.idol}</span>
+                            </div>
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Mentira:</span>
+                              <span className="text-sm">"{currentQuestion.lie}"</span>
+                            </div>
+                            <div className="flex gap-4">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Evangelio:</span>
+                              <span className="font-serif underline decoration-brand-teal/30 text-sm">{currentQuestion.gospel}</span>
+                            </div>
+                            <div className="flex gap-4 border-t border-brand-teal/10 pt-2">
+                              <span className="font-serif italic opacity-50 shrink-0 text-sm">Fruto:</span>
+                              <span className="text-sm text-brand-green font-bold">{currentQuestion.fruit}</span>
+                            </div>
+                          </div>
+                        )}
+                        {selectedCat?.id === 'counselor' && (
+                          <div className="text-sm space-y-2">
+                            <p><strong>Enfoque:</strong> {currentQuestion.focus}</p>
+                            <p className="opacity-60 italic text-xs">Temas: {currentQuestion.themes.join(", ")}</p>
+                          </div>
+                        )}
                         {selectedCat?.id === 'qa' && currentQuestion.a}
-                        {selectedCat?.id === '5sec' && currentQuestion.a}
-                        {selectedCat?.id === 'pass' && `${currentQuestion.word} (${currentQuestion.verse})`}
+                        {selectedCat?.id === '10sec' && currentQuestion.a}
                         {selectedCat?.id === 'who' && `${currentQuestion.name}`}
-                        {selectedCat?.id === 'verse' && currentQuestion.answer}
-                        {selectedCat?.id === 'mime' && `${currentQuestion.lesson} - ${currentQuestion.diff}`}
-                      </p>
+                        {selectedCat?.id === 'mime' && `${currentQuestion.lesson}`}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
 
               {/* Controls */}
               <div className="mt-8 grid grid-cols-2 gap-4">
                 {!showAnswer ? (
                   <button 
                     onClick={() => setShowAnswer(true)}
-                    className="col-span-2 py-4 rounded-2xl bg-[#1A1A18] text-white flex items-center justify-center gap-2 font-semibold shadow-lg hover:bg-black transition-all active:scale-95"
+                    className="col-span-2 py-5 rounded-[1.5rem] bg-brand-ink text-white flex items-center justify-center gap-3 font-black uppercase tracking-widest shadow-xl shadow-black/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                   >
-                    <Eye size={20} /> Ver Respuesta
+                    <Eye size={20} /> Ver Diagnóstico
                   </button>
                 ) : (
                   <>
                     <button 
                       onClick={() => markResult('wrong')}
-                      className="py-4 rounded-2xl bg-white border-2 border-brand-coral/20 text-brand-coral flex items-center justify-center gap-2 font-semibold hover:bg-brand-coral/5 transition-all active:scale-95"
+                      className="py-5 rounded-3xl bg-white border-2 border-brand-coral/20 text-brand-coral flex items-center justify-center gap-3 font-black uppercase tracking-widest hover:bg-brand-coral/5 transition-all shadow-lg active:scale-95 cursor-pointer"
                     >
-                      <X size={20} /> Fallé
+                      <X size={24} /> Fallé
                     </button>
                     <button 
                       onClick={() => markResult('correct')}
-                    className="py-4 rounded-2xl bg-brand-teal text-white flex items-center justify-center gap-2 font-semibold shadow-lg hover:bg-brand-teal-dark transition-all active:scale-95 shadow-brand-teal/20"
+                      className="py-5 rounded-3xl bg-brand-teal text-white flex items-center justify-center gap-3 font-black uppercase tracking-widest shadow-xl shadow-brand-teal/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
                     >
-                      <Check size={20} /> Acerté
+                      <Check size={24} /> Acerté
                     </button>
                   </>
                 )}
                 <button 
                   onClick={() => markResult('skip')}
-                  className="col-span-2 py-3 rounded-xl border border-dashed border-black/10 text-[#5F5E5A] flex items-center justify-center gap-2 text-sm font-medium hover:bg-black/5 transition-all"
+                  className="col-span-2 py-3 rounded-2xl border-2 border-dashed border-black/5 text-brand-ink/40 flex items-center justify-center gap-3 text-xs font-black uppercase tracking-[0.2em] hover:bg-black/5 transition-all cursor-pointer"
                 >
-                  Saltar Pregunta <ChevronRight size={16} />
+                  Continuar sin puntuar <ChevronRight size={16} />
                 </button>
               </div>
+            </motion.div>
+          )}
+
+          {screen === 'special_card' && currentSpecialCard && (
+            <motion.div 
+              key="special"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.2 }}
+              className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-white rounded-[3rem] shadow-2xl border-4 border-dashed border-brand-purple/20"
+            >
+              <div className={`p-8 rounded-full bg-${currentSpecialCard.color}/10 text-${currentSpecialCard.color} mb-8 shadow-inner`}>
+                <currentSpecialCard.icon size={80} />
+              </div>
+              <h2 className="font-serif italic text-4xl font-bold mb-4">Carta de {currentSpecialCard.name}</h2>
+              <p className="text-xl text-brand-ink/70 leading-relaxed mb-10 max-w-sm">
+                {currentSpecialCard.description}
+              </p>
+              <button 
+                onClick={handleNext}
+                className={`py-5 px-12 rounded-full bg-${currentSpecialCard.color} text-white font-black uppercase tracking-widest shadow-xl shadow-${currentSpecialCard.color}/30 active:scale-95 transition-all cursor-pointer`}
+              >
+                Recibir y Continuar
+              </button>
             </motion.div>
           )}
 
@@ -355,48 +536,48 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               className="flex-1 text-center"
             >
-              <div className="mb-12 relative inline-block">
-                <div className="p-8 rounded-full bg-brand-purple text-white shadow-2xl shadow-brand-purple/40">
-                  <Trophy size={64} />
+              <div className="mb-12 relative flex justify-center">
+                <div className="p-16 rounded-full bg-brand-purple text-white shadow-[0_25px_60px_rgba(93,84,164,0.3)] border-8 border-white">
+                  <Trophy size={80} />
                 </div>
                 <motion.div 
                   initial={{ scale: 0 }} 
                   animate={{ scale: 1 }} 
                   transition={{ delay: 0.3 }}
-                  className="absolute -bottom-2 -right-2 p-3 bg-brand-amber text-white rounded-2xl shadow-lg"
+                  className="absolute -bottom-4 right-1/4 p-5 bg-brand-amber text-white rounded-3xl shadow-xl shadow-brand-amber/20"
                 >
-                  <History size={20} />
+                  <History size={32} />
                 </motion.div>
               </div>
 
-              <h2 className="font-display text-4xl font-bold text-[#1A1A18] mb-2 uppercase italic tracking-tight">¡Sesión Terminada!</h2>
-              <p className="text-[#5F5E5A] mb-12">Has completado el desafío de <strong>{selectedCat?.name}</strong></p>
+              <h2 className="font-serif italic text-6xl font-bold text-brand-ink mb-2">Entrenamiento Completado</h2>
+              <p className="text-brand-ink/40 font-black uppercase tracking-[0.4em] text-xs mb-12">Desafío: {selectedCat?.name}</p>
 
-              <div className="grid grid-cols-3 gap-4 mb-12">
-                <div className="bg-white p-6 rounded-3xl shadow-sm">
-                  <span className="block text-3xl font-display font-bold text-brand-teal">{correctCount}</span>
-                  <span className="text-[10px] uppercase font-bold text-[#5F5E5A] tracking-wider">Correctas</span>
+              <div className="grid grid-cols-3 gap-6 mb-16">
+                <div className="bg-white p-8 rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.03)] border border-black/5">
+                  <span className="block text-4xl font-display font-black text-brand-teal">{correctCount}</span>
+                  <span className="text-[10px] uppercase font-black text-brand-ink/30 tracking-widest">Gracia</span>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm">
-                  <span className="block text-3xl font-display font-bold text-brand-coral">{wrongCount}</span>
-                  <span className="text-[10px] uppercase font-bold text-[#5F5E5A] tracking-wider">Fallos</span>
+                <div className="bg-white p-8 rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.03)] border border-black/5">
+                  <span className="block text-4xl font-display font-black text-brand-coral">{wrongCount}</span>
+                  <span className="text-[10px] uppercase font-black text-brand-ink/30 tracking-widest">Espinas</span>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm">
-                  <span className="block text-3xl font-display font-bold text-brand-amber">{skipCount}</span>
-                  <span className="text-[10px] uppercase font-bold text-[#5F5E5A] tracking-wider">Saltadas</span>
+                <div className="bg-white p-8 rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.03)] border border-black/5">
+                  <span className="block text-4xl font-display font-black text-brand-amber">{skipCount}</span>
+                  <span className="text-[10px] uppercase font-black text-brand-ink/30 tracking-widest">Saltadas</span>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 max-w-sm mx-auto">
                 <button 
                   onClick={() => startCategory(selectedCat!)}
-                  className="py-5 rounded-2xl bg-brand-purple text-white font-bold text-lg shadow-xl shadow-brand-purple/20 flex items-center justify-center gap-3 hover:bg-brand-purple/90 transition-all active:scale-95"
+                  className="py-6 rounded-3xl bg-brand-purple text-white font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(93,84,164,0.3)] flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <RefreshCw size={24} /> Volver a Intentar
+                  <RefreshCw size={24} /> Reintentar Entrenamiento
                 </button>
                 <button 
                   onClick={() => setScreen('home')}
-                  className="py-5 rounded-2xl bg-white border border-black/5 text-[#1A1A18] font-bold text-lg hover:bg-[#F5F4F0] transition-all active:scale-95"
+                  className="py-6 rounded-3xl bg-white border-2 border-black/5 text-brand-ink font-black uppercase tracking-[0.2em] hover:bg-brand-paper transition-all active:scale-95 cursor-pointer"
                 >
                   Cambiar Categoría
                 </button>
@@ -406,9 +587,9 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="w-full max-w-xl mx-auto px-4 py-8 text-center border-t border-black/5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#5F5E5A]">
-          Basado en el curso de Consejería Bíblica
+      <footer className="w-full max-w-2xl mx-auto px-4 py-12 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-brand-ink/30">
+          Unidad en la Diversidad • Soli Deo Gloria
         </p>
       </footer>
     </div>
