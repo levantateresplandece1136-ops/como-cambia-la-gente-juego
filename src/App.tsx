@@ -8,11 +8,13 @@ import {
   BookOpen, 
   Theater, 
   ArrowLeft, 
+  ArrowRight,
   Check, 
   X, 
   RefreshCw, 
   Eye, 
   ChevronRight,
+  ChevronLeft,
   Trophy,
   History,
   Stethoscope,
@@ -73,7 +75,13 @@ export default function App() {
   };
 
   const startCategory = (cat: Category) => {
-    const raw = [...GAME_DATA[cat.id]].sort(() => Math.random() - 0.5);
+    // Fisher-Yates Shuffle for true randomness
+    const raw = [...GAME_DATA[cat.id]];
+    for (let i = raw.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [raw[i], raw[j]] = [raw[j], raw[i]];
+    }
+    
     setQuestions(raw);
     setSelectedCat(cat);
     setCurrentIndex(0);
@@ -130,10 +138,18 @@ export default function App() {
       setShowAnswer(false);
       setIsTimerRunning(false);
       prepareTimer(selectedCat?.id === '10sec' ? 10 : 30);
-      setScreen('game');
     } else {
       setScreen('results');
       if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setShowAnswer(false);
+      setIsTimerRunning(false);
+      prepareTimer(selectedCat?.id === '10sec' ? 10 : 30);
     }
   };
 
@@ -141,6 +157,8 @@ export default function App() {
   const correctCount = results.filter(r => r.status === 'correct').length;
   const wrongCount = results.filter(r => r.status === 'wrong').length;
   const skipCount = results.filter(r => r.status === 'skip').length;
+
+  const getResultForIndex = (idx: number) => results.find(r => r.idx === idx);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -267,21 +285,42 @@ export default function App() {
               </div>
 
               {/* Enhanced Question Card */}
-              <motion.div 
-                layout
-                animate={
-                  isTimerRunning && timeLeft <= 5 && timeLeft > 0
-                    ? { 
-                        borderColor: ['#C14A26', '#1F1E1B', '#C14A26'],
-                        backgroundColor: ['#ffffff', '#C14A26', '#ffffff'],
-                        x: [0, -4, 4, -4, 4, 0],
-                        scale: [1, 1.02, 1]
-                      }
-                    : { borderColor: 'rgba(0,0,0,0.05)', backgroundColor: '#ffffff', x: 0 }
-                }
-                transition={isTimerRunning && timeLeft <= 5 ? { duration: 0.2, repeat: Infinity } : {}}
-                className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 flex-1 flex flex-col items-center justify-center relative overflow-hidden"
-              >
+              <div className="flex-1 flex flex-col relative group/card">
+                {/* Side Navigation Buttons */}
+                <div className="absolute inset-y-0 -left-6 flex items-center z-20">
+                  <button 
+                    onClick={handlePrevious}
+                    disabled={currentIndex === 0}
+                    className={`p-3 rounded-full bg-white shadow-lg border border-black/5 transition-all active:scale-95 ${currentIndex === 0 ? 'opacity-0 scale-0' : 'opacity-100 hover:bg-brand-paper cursor-pointer'}`}
+                  >
+                    <ChevronLeft size={24} className="text-brand-ink" />
+                  </button>
+                </div>
+                <div className="absolute inset-y-0 -right-6 flex items-center z-20">
+                  <button 
+                    onClick={handleNext}
+                    disabled={currentIndex === questions.length - 1}
+                    className={`p-3 rounded-full bg-white shadow-lg border border-black/5 transition-all active:scale-95 ${currentIndex === questions.length - 1 ? 'opacity-0 scale-0' : 'opacity-100 hover:bg-brand-paper cursor-pointer'}`}
+                  >
+                    <ChevronRight size={24} className="text-brand-ink" />
+                  </button>
+                </div>
+
+                <motion.div 
+                  layout
+                  animate={
+                    isTimerRunning && timeLeft <= 5 && timeLeft > 0
+                      ? { 
+                          borderColor: ['#C14A26', '#1F1E1B', '#C14A26'],
+                          backgroundColor: ['#ffffff', '#C14A26', '#ffffff'],
+                          x: [0, -4, 4, -4, 4, 0],
+                          scale: [1, 1.02, 1]
+                        }
+                      : { borderColor: 'rgba(0,0,0,0.05)', backgroundColor: '#ffffff', x: 0 }
+                  }
+                  transition={isTimerRunning && timeLeft <= 5 ? { duration: 0.2, repeat: Infinity } : {}}
+                  className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 flex-1 flex flex-col items-center justify-center relative overflow-hidden"
+                >
                 {isTimerRunning && timeLeft <= 5 && (
                   <motion.div 
                     initial={{ opacity: 0 }}
@@ -292,7 +331,12 @@ export default function App() {
                 )}
                 <div className="absolute top-6 left-10 flex items-center gap-3 z-10">
                   <div className={`p-2 rounded-xl bg-${selectedCat?.color}/10 text-${selectedCat?.color}`}>
-                    {selectedCat && iconMap[selectedCat.icon] && <selectedCat.icon size={16} />}
+                    {selectedCat && iconMap[selectedCat.icon] && (
+                      (() => {
+                        const Icon = iconMap[selectedCat.icon];
+                        return <Icon size={16} />;
+                      })()
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-40 block">{selectedCat?.name}</span>
@@ -469,6 +513,7 @@ export default function App() {
                   )}
                 </AnimatePresence>
               </motion.div>
+              </div>
 
               {/* Controls */}
               <div className="mt-8 grid grid-cols-2 gap-4">

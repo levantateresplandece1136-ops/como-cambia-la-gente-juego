@@ -192,7 +192,12 @@ export const GAME_DATA: Record<CategoryId, any[]> = {
   ],
   qa: [
     {q:'¿Cómo define la clase la consejería bíblica?', a:'Es un proceso cristocéntrico y bibliosaturado que, en dependencia del Espíritu Santo, aplica la Palabra a las circunstancias del aconsejado.', diff:'Clase 1'},
-    {q:'¿Cuál es el propósito primordial de la consejería?', a:'La transformación del corazón: sus motivaciones, deseos y creencias que impulsan la conducta.', diff:'Clase 1'}
+    {q:'¿Cuál es el propósito primordial de la consejería?', a:'La transformación del corazón: sus motivaciones, deseos y creencias que impulsan la conducta.', diff:'Clase 1'},
+    {q:'¿Qué significa que el corazón es una "fábrica de ídolos" según Calvino?', a:'Que constantemente buscamos algo fuera de Dios para darnos significado, seguridad o felicidad.', diff:'Teología'},
+    {q:'¿Cuál es la diferencia entre remordimiento y arrepentimiento?', a:'Remordimiento: miedo al castigo o tristeza por las consecuencias. Arrepentimiento: tristeza según Dios que busca restaurar la relación con Él.', diff:'Cambio Real'},
+    {q:'¿Qué representa la "Cruz" en el modelo de cambio?', a:'La provisión de Dios: perdón por el pasado, poder para el presente y esperanza para el futuro.', diff:'Modelo'},
+    {q:'¿Por qué decimos que la consejería es una labor de toda la iglesia?', a:'Porque Dios diseñó el crecimiento en el contexto de la comunidad, no solo en un consultorio.', diff:'Comunidad'},
+    {q:'¿Qué es la "santificación progresiva"?', a:'El proceso continuo donde el Espíritu Santo nos hace más semejantes a Cristo a través de la Palabra y las pruebas.', diff:'Doctrina'}
   ],
   '10sec': [
     {q:'...son ejemplos de "calor" en la vida cotidiana.', a:'Un jefe injusto, un hijo desobediente, un mensaje sin respuesta.'},
@@ -286,7 +291,11 @@ export const GAME_DATA: Record<CategoryId, any[]> = {
     {word:'OMNISCIENCIA', def:'El conocimiento total y perfecto de Dios sobre todo corazón.', verse:'1 Juan 3:20'},
   ],
   who: [
-    {name:'JONÁS', easy:'Obedeció pero se fue furioso cuando todo salió bien.', hard:'Su conducta cambió bajo presión pero su corazón nunca se rindió. Jon. 4.', type:'Personaje bíblico'}
+    {name:'JONÁS', easy:'Obedeció pero se fue furioso cuando todo salió bien.', hard:'Su conducta cambió bajo presión pero su corazón nunca se rindió. Jon. 4.', type:'Personaje bíblico'},
+    {name:'EL HIJO PRÓDIGO', easy:'Gastó todo y volvió a casa cuando sintió hambre.', hard:'Sus "espinas" fueron la independencia y el placer; su "fruto" fue la rendición humilde al Padre.', type:'Personaje bíblico'},
+    {name:'DAVID', easy:'El rey que cometió adulterio y asesinato.', hard:'Su pecado reveló que incluso un hombre conforme al corazón de Dios puede ser cegado por sus propios deseos.', type:'Personaje bíblico'},
+    {name:'EL JOVEN RICO', easy:'Se fue triste porque tenía muchas posesiones.', hard:'Un ejemplo donde el ídolo de la seguridad/riqueza impidió seguir a Cristo de corazón.', type:'Personaje bíblico'},
+    {name:'PEDRO', easy:'Negó a Jesús tres veces tras prometer lealtad eterna.', hard:'Su fracaso reveló el ídolo de la reputación y el miedo al hombre, pero fue restaurado por gracia.', type:'Personaje bíblico'}
   ],
   verse: [
     {topic:'que Dios es quien terminará la obra que comenzó', answer:'Filipenses 1:6 — "El que comenzó en vosotros la buena obra, la perfeccionará hasta el día de Jesucristo."', ref:'Fil. 1:6'}
